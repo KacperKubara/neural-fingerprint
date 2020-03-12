@@ -16,6 +16,7 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 from rdkit.Chem.Draw import DrawingOptions
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 from neuralfingerprint import load_data, relu
 from neuralfingerprint import build_conv_deep_net, build_convnet_fingerprint_fun
@@ -24,18 +25,26 @@ from neuralfingerprint import build_batched_grad, degrees, build_standard_net
 from neuralfingerprint.util import rmse
 from neuralfingerprint.data_util import remove_duplicates
 
+"""
 task_params = {'N_train'     : 800,
                'N_valid'     : 150,
                'N_test'      : 170,
                'target_name' : 'measured log solubility in mols per litre',
                'data_file'   : 'delaney.csv'}
+"""
+# Trying to retain same train/test/valid ratio
+task_params = {'N_train'     : 2590,
+               'N_valid'     : 555,
+               'N_test'      : 555,
+               'target_name' : 'ClogP',
+               'data_file'   : 'wang_data_smiles.csv'}
 
 num_epochs = 100
 batch_size = 100
 normalize = 1
 dropout = 0
 activation = relu
-params = {'fp_length': 20,
+params = {  'fp_length': 20,
             'fp_depth': 3,
             'init_scale':np.exp(-4),
             'learn_rate':np.exp(-4),
@@ -156,6 +165,8 @@ def draw_molecule_with_highlights(filename, smiles, highlight_atoms):
     drawoptions.bgColor=None
 
     mol = Chem.MolFromSmiles(smiles)
+    #Draw.MolToFile(mol, filename, highlightAtoms=highlight_atoms, size=figsize, options=drawoptions,fitImage=False)
+    #plt.clf()
     fig = Draw.MolToMPL(mol, highlightAtoms=highlight_atoms, size=figsize, options=drawoptions,fitImage=False)
 
     fig.gca().set_axis_off()
@@ -212,14 +223,23 @@ def plot(trained_weights):
     net_weights = combined_parser.get(trained_weights, 'net weights')
     last_layer_weights = net_parser.get(net_weights, ('weights', 0))
 
+    # For each fingerprint bit
     for fp_ix in range(params['fp_length']):
         print "FP {0} has linear regression coefficient {1}".format(fp_ix, last_layer_weights[fp_ix][0])
         combined_list = []
+        # For each radius counted from the most-activating atom
+        # all_radii is defined as params['fp_depth'] + 1
         for radius in all_radii:
-            fp_activations = atom_activations[radius][:, fp_ix]
+            # Take atom activations for the specifc radius and fingerpint bit
+            # Why do we take radius like it? -> Because the layer depth is related to neighbourhood radius
+            # if the layer is deeper that means that we take information from a neighbourhood with a bigger radius
+            # with redefined conv layers for graphs
+            fp_activations = atom_activations[radius][:, fp_ix] 
+            # Create a list of activations for each radius
             combined_list += [(fp_activation, atom_ix, radius) for atom_ix, fp_activation in enumerate(fp_activations)]
 
         unique_list = remove_duplicates(combined_list, key_lambda=lambda x: x[0])
+        # Sort by decreasing activation
         combined_list = sorted(unique_list, key=lambda x: -x[0])
 
         for fig_ix in range(num_figs_per_fp):
@@ -231,17 +251,18 @@ def plot(trained_weights):
 
             print "radius:", cur_radius, "atom list:", highlight_list_rdkit, "activation", activation
             draw_molecule_with_highlights(
-                "figures/fp_{0}_highlight_{1}.pdf".format(fp_ix, fig_ix),
+                "figures/fp_{0}_highlight_{1}.jpg".format(fp_ix, fig_ix),
                 train_smiles[most_activating_mol_ix],
                 highlight_atoms=highlight_list_rdkit)
 
 if __name__ == '__main__':
     # Training.  Only need to run this part if we haven't yet saved results.pkl
+    """
     trained_network_weights = train_neural_fingerprint()
-    with open('results.pkl', 'w') as f:
+    with open('results_wang.pkl', 'w') as f:
         pickle.dump(trained_network_weights, f)
-
+    """
     # Plotting.
-    with open('results.pkl') as f:
+    with open('results_wang.pkl') as f:
         trained_weights = pickle.load(f)
     plot(trained_weights)
