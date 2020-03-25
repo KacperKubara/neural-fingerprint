@@ -272,9 +272,9 @@ if __name__ == '__main__':
     with open('results_wang.pkl') as f:
         trained_weights = pickle.load(f)
     plot(trained_weights, "wang")
-    print(f"wang data plotted")
+    print "wang data plotted"
 
     with open('results.pkl') as f:
         trained_weights = pickle.load(f)
     plot(trained_weights, "delaney")
-    print(f"delaney data plotted")
+    print "delaney data plotted"
