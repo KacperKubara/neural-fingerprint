@@ -228,12 +228,11 @@ def plot(trained_weights):
         print "FP {0} has linear regression coefficient {1}".format(fp_ix, last_layer_weights[fp_ix][0])
         combined_list = []
         # For each radius counted from the most-activating atom
-        # all_radii is defined as params['fp_depth'] + 1
+        # all_radii is defined as params['fp_depth'] + 1 where fp_depth is a layer depth
         for radius in all_radii:
             # Take atom activations for the specifc radius and fingerpint bit
-            # Why do we take radius like it? -> Because the layer depth is related to neighbourhood radius
+            # Why do we take radius like it? -> Because the layer depth is related to the neighbourhood radius (look at the paper)
             # if the layer is deeper that means that we take information from a neighbourhood with a bigger radius
-            # with redefined conv layers for graphs
             fp_activations = atom_activations[radius][:, fp_ix] 
             # Create a list of activations for each radius
             combined_list += [(fp_activation, atom_ix, radius) for atom_ix, fp_activation in enumerate(fp_activations)]
@@ -243,13 +242,19 @@ def plot(trained_weights):
         combined_list = sorted(unique_list, key=lambda x: -x[0])
 
         for fig_ix in range(num_figs_per_fp):
-            # Find the most-activating atoms for this fingerprint index, across all molecules and depths.
+            # Find the most-activating atoms for specific fingerprint bit, across all molecules and depths (radius).
             activation, most_active_atom_ix, cur_radius = combined_list[fig_ix]
+            # Take a molecule to which the most_active_atom_ix ID belongs
             most_activating_mol_ix = parent_molecule_dict[most_active_atom_ix]
+            # Get the neighbouring atom within a certain radius to most_active_atom_ix 
             highlight_list_our_ixs = get_neighborhood_ixs(array_rep, most_active_atom_ix, cur_radius)
+            # Just some conversion for RDKit
             highlight_list_rdkit = [array_rep['rdkit_ix'][our_ix] for our_ix in highlight_list_our_ixs]
 
             print "radius:", cur_radius, "atom list:", highlight_list_rdkit, "activation", activation
+            # fp_ix is a fingerprint bit
+            # fig_ix controls how many molecule substructures we want to find for fp_ix
+            # fig_ix=0 has the biggest activation value, fig_ix=num_figs_per_fp the smallest activation value
             draw_molecule_with_highlights(
                 "figures/fp_{0}_highlight_{1}.jpg".format(fp_ix, fig_ix),
                 train_smiles[most_activating_mol_ix],

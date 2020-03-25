@@ -71,7 +71,8 @@ def build_convnet_fingerprint_fun(num_hidden_features=[100, 100], fp_length=512,
 
     def output_layer_fun_and_atom_activations(weights, smiles):
         """Computes layer-wise convolution, and returns a fixed-size output."""
-
+        # This code will compute these activations for all molecules that were passed at once
+        # Handy function to generate all  molecular features for us
         array_rep = array_rep_from_smiles(tuple(smiles))
         atom_features = array_rep['atom_features']
         bond_features = array_rep['bond_features']
@@ -79,17 +80,26 @@ def build_convnet_fingerprint_fun(num_hidden_features=[100, 100], fp_length=512,
         all_layer_fps = []
         atom_activations = []
         def write_to_fingerprint(atom_features, layer):
+            # Output weights for specific layer
             cur_out_weights = parser.get(weights, ('layer output weights', layer))
+            # Output bias for specific layer
             cur_out_bias    = parser.get(weights, ('layer output bias', layer))
+            # Apply softmax after a linear layer - im not certain what are the dimensions
             atom_outputs = softmax(cur_out_bias + np.dot(atom_features, cur_out_weights), axis=1)
+            # We get activations for specifc layer for all molecules
+            # I think we got activations that have fp size for a certain radius (layer depth)
             atom_activations.append(atom_outputs)
+            # We are not interested in this stuff below -> we dont use that in the code for plotting
             # Sum over all atoms within a moleclue:
             layer_output = sum_and_stack(atom_outputs, array_rep['atom_list'])
             all_layer_fps.append(layer_output)
 
         num_layers = len(num_hidden_features)
+        # For layer depth (radius of neighbourhood)
         for layer in xrange(num_layers):
+            # Get the atom_activations for specific radius for all molecules
             write_to_fingerprint(atom_features, layer)
+            # Propagate the results to another layer (???)
             atom_features = update_layer(weights, layer, atom_features, bond_features, array_rep,
                                          normalize=normalize)
         write_to_fingerprint(atom_features, num_layers)
