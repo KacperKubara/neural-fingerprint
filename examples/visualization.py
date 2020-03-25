@@ -187,12 +187,13 @@ def plot(trained_weights):
                         (task_params['N_train'], task_params['N_valid'], task_params['N_test']),
                         input_name='smiles', target_name=task_params['target_name'])
     train_smiles, train_targets = traindata
+    valid_smiles, valid_targets = valdata
 
     print "Convnet fingerprints with neural net"
     conv_arch_params['return_atom_activations'] = True
     output_layer_fun, parser, compute_atom_activations = \
        build_convnet_fingerprint_fun(**conv_arch_params)
-    atom_activations, array_rep = compute_atom_activations(trained_weights, train_smiles)
+    atom_activations, array_rep = compute_atom_activations(trained_weights, valid_smiles)
 
     if not os.path.exists('figures'): os.makedirs('figures')
 
