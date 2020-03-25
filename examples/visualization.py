@@ -181,7 +181,7 @@ def construct_atom_neighbor_list(array_rep):
     return atom_neighbour_list
 
 
-def plot(trained_weights):
+def plot(trained_weights, folder):
     print "Loading training data..."
     traindata, valdata, testdata = load_data(task_params['data_file'],
                         (task_params['N_train'], task_params['N_valid'], task_params['N_test']),
@@ -257,7 +257,7 @@ def plot(trained_weights):
             # fig_ix controls how many molecule substructures we want to find for fp_ix
             # fig_ix=0 has the biggest activation value, fig_ix=num_figs_per_fp the smallest activation value
             draw_molecule_with_highlights(
-                "figures/fp_{0}_highlight_{1}.jpg".format(fp_ix, fig_ix),
+                "figures/{0}/fp_{1}_highlight_{2}.jpg".format(folder, fp_ix, fig_ix),
                 train_smiles[most_activating_mol_ix],
                 highlight_atoms=highlight_list_rdkit)
 
@@ -271,4 +271,10 @@ if __name__ == '__main__':
     # Plotting.
     with open('results_wang.pkl') as f:
         trained_weights = pickle.load(f)
-    plot(trained_weights)
+    plot(trained_weights, "wang")
+    print(f"wang data plotted")
+
+    with open('results.pkl') as f:
+        trained_weights = pickle.load(f)
+    plot(trained_weights, "delaney")
+    print(f"delaney data plotted")
